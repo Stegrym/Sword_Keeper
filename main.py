@@ -74,6 +74,24 @@ def write_data():
         json.dump(data, file, indent=4, ensure_ascii=False)
 
 
-write_data()
+def search_entry(service: str) -> dict:
+    """
+    Ищет данные пользователя по сервису
+    :param service:
+    :return: словарь даннных
+    """
+    service_info = f"Данные сервиса - {service}: "
+    storage = read_data()
+    for data in storage:
+        if data["service"] == service:
+            info = data
+            break
+        info = "Не найденны"
+    service_info += info
+    return service_info
+
+
+# write_data()
 
 print(read_data())
+print(search_entry("выф "))
