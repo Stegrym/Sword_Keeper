@@ -1,97 +1,121 @@
 import tkinter as tk
-from db_logic import get_all, get_data, add_password, delete_password
+from tkinter import ttk, messagebox
+from db_logic import get_all, add_password, delete_password
 
-def run_app():
+
+def run_gui():
     root = tk.Tk()
-    root.title("Менеджер паролей")
+    root.title("Password Manager")
 
-    # --- список записей ---
-    listbox = tk.Listbox(root, width=50)
-    listbox.pack()
+    # Определяем колонки (без id)
+    columns = ("Service", "Email", "Password", "Notes")
+    tree = ttk.Treeview(root, columns=columns, show="headings")
 
-    details_var = tk.StringVar()
-    details_label = tk.Label(root, textvariable=details_var, justify="left")
-    details_label.pack()
+    for col in columns:
+        tree.heading(col, text=col, command=lambda c=col: sort_by(tree, c, False))
+        tree.column(col, width=150)
+
+    tree.pack(fill=tk.BOTH, expand=True)
+
 
     # --- функции ---
-    def refresh_list():
-        listbox.delete(0, "end")
+    def show_data():
+        for row in tree.get_children():
+            tree.delete(row)
         for rec in get_all():
-            listbox.insert("end", f"{rec.id}: {rec.service} ({rec.email})")
+            tree.insert("", tk.END, values=(rec.service, rec.email, rec.password, rec.notes), iid=str(rec.id))
 
-    def show_details():
-        selection = listbox.curselection()
-        if not selection:
-            return
-        selected = listbox.get(selection[0])
-        record_id = int(selected.split(":")[0])
-        record = get_data(record_id)
-        if record:
-            details_var.set(
-                f"Сервис: {record.service}\n"
-                f"Email: {record.email}\n"
-                f"Пароль: {record.password}\n"
-                f"Заметки: {record.notes}"
-            )
+    def sort_by(tree, col, descending):
+        data = [(tree.set(child, col), child) for child in tree.get_children("")]
+        data.sort(reverse=descending)
+        for index, (val, child) in enumerate(data):
+            tree.move(child, "", index)
+        tree.heading(col, command=lambda: sort_by(tree, col, not descending))
 
-    def add_record_window():
+    def add_record():
+        # простая форма через toplevel
         win = tk.Toplevel(root)
-        win.title("Добавить запись")
+        win.title("Add record")
 
-        service_var = tk.StringVar()
-        email_var = tk.StringVar()
-        password_var = tk.StringVar()
-        notes_var = tk.StringVar()
+        tk.Label(win, text="Service").grid(row=0, column=0)
+        tk.Label(win, text="Email").grid(row=1, column=0)
+        tk.Label(win, text="Password").grid(row=2, column=0)
+        tk.Label(win, text="Notes").grid(row=3, column=0)
 
-        tk.Label(win, text="Сервис").pack()
-        tk.Entry(win, textvariable=service_var).pack()
-        tk.Label(win, text="Email").pack()
-        tk.Entry(win, textvariable=email_var).pack()
-        tk.Label(win, text="Пароль").pack()
-        tk.Entry(win, textvariable=password_var).pack()
-        tk.Label(win, text="Заметки").pack()
-        tk.Entry(win, textvariable=notes_var).pack()
+        service_entry = tk.Entry(win)
+        email_entry = tk.Entry(win)
+        password_entry = tk.Entry(win)
+        notes_entry = tk.Entry(win)
+
+        service_entry.grid(row=0, column=1)
+        email_entry.grid(row=1, column=1)
+        password_entry.grid(row=2, column=1)
+        notes_entry.grid(row=3, column=1)
 
         def save():
-            add_password(service_var.get(), email_var.get(),
-                         password_var.get(), notes_var.get())
+            add_password(
+                service_entry.get(),
+                email_entry.get(),
+                password_entry.get(),
+                notes_entry.get()
+            )
+            show_data()
             win.destroy()
-            refresh_list()
 
-        tk.Button(win, text="Сохранить", command=save).pack()
+        tk.Button(win, text="Save", command=save).grid(row=4, column=0, columnspan=2)
 
-    def delete_selected():
-        selection = listbox.curselection()
-        if not selection:
+    def delete_record():
+        selected = tree.selection()
+        if not selected:
+            messagebox.showwarning("Warning", "Выберите запись для удаления")
             return
-        selected = listbox.get(selection[0])
-        record_id = int(selected.split(":")[0])
+        record_id = int(selected[0])  # iid хранит id
+        delete_password(record_id)
+        show_data()
 
-        confirm = tk.Toplevel(root)
-        tk.Label(confirm, text="Удалить запись?").pack()
+    def copy_email():
+        selected = tree.selection()
+        if not selected:
+            messagebox.showwarning("Warning", "Выберите запись")
+            return
+        values = tree.item(selected[0], "values")
+        email = values[1]  # колонка Email
+        root.clipboard_clear()
+        root.clipboard_append(email)
+        messagebox.showinfo("Copied", f"Email скопирован: {email}")
 
-        def do_delete():
-            delete_password(record_id)
-            confirm.destroy()
-            refresh_list()
+    def copy_password():
+        selected = tree.selection()
+        if not selected:
+            messagebox.showwarning("Warning", "Выберите запись")
+            return
+        values = tree.item(selected[0], "values")
+        password = values[2]  # колонка Password
+        root.clipboard_clear()
+        root.clipboard_append(password)
+        messagebox.showinfo("Copied", "Пароль скопирован!")
 
-        tk.Button(confirm, text="Да", command=do_delete).pack()
-        tk.Button(confirm, text="Нет", command=confirm.destroy).pack()
+    menu = tk.Menu(root, tearoff=0)
+    menu.add_command(label="Copy Email", command=copy_email)
+    menu.add_command(label="Copy Password", command=copy_password)
 
-    # --- кнопки ---
-    btn_refresh = tk.Button(root, text="Обновить список", command=refresh_list)
-    btn_refresh.pack()
+    def show_menu(event):
+        selected = tree.identify_row(event.y)
+        if selected:
+            tree.selection_set(selected)
+            menu.post(event.x_root, event.y_root)
 
-    btn_show = tk.Button(root, text="Показать детали", command=show_details)
-    btn_show.pack()
+    tree.bind("<Button-3>", show_menu)  # ПКМ
 
-    btn_add = tk.Button(root, text="Добавить запись", command=add_record_window)
-    btn_add.pack()
+    # --- кнопки в одну строку ---
+    btn_frame = tk.Frame(root)
+    btn_frame.pack(pady=5)
 
-    btn_delete = tk.Button(root, text="Удалить выбранную", command=delete_selected)
-    btn_delete.pack()
+    tk.Button(btn_frame, text="Add", command=add_record).pack(side=tk.LEFT, padx=5)
+    tk.Button(btn_frame, text="Copy Email", command=copy_email).pack(side=tk.LEFT, padx=5)
+    tk.Button(btn_frame, text="Copy Password", command=copy_password).pack(side=tk.LEFT, padx=5)
+    tk.Button(btn_frame, text="Delete", command=delete_record).pack(side=tk.LEFT, padx=5)
+    tk.Button(btn_frame, text="Refresh", command=show_data).pack(side=tk.LEFT, padx=5)
 
-    # --- старт ---
-    refresh_list()
+    show_data()
     root.mainloop()
-
