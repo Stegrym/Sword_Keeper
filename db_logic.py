@@ -15,8 +15,8 @@ def create_tables():
 # CREATE
 def add_password(service: str, email: str, password: str, notes: str = ""):
     return Passwords.create(
-        service=service,
-        email=email,
+        service=service.strip().lower(),
+        email=email.strip().lower(),
         password=password,
         notes=notes
     )
