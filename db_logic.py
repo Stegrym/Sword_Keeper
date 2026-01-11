@@ -1,7 +1,6 @@
-import logging
+from app_loging.loging_setup import logger
 from models import Passwords, db
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
 
 def create_tables():
@@ -9,7 +8,7 @@ def create_tables():
 
     with db:
         db.create_tables([Passwords])
-        logging.info("Таблица создана!")
+        logger.info("Таблица создана!")
 
 
 # CREATE
