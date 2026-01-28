@@ -1,6 +1,7 @@
 import flet as ft
+from app_loging import log_info
+from utills import decode_password
 from clipboard import copy
-
 from db_logic import get_all
 
 
@@ -11,11 +12,15 @@ def info_page(id: int, page: ft.Page):
 
     if not record:
         return ft.View(route="/info", controls=[ft.Text("Запись не найдена")])
+    else:
+        log_info(f"b64 - {record.password}")
+        password = decode_password(record.password)
+        log_info(f"пароль - {password}")
 
     def toggle(e):
         # меняем текст на ***** или реальный пароль
         if show.current.value == "*****":
-            show.current.value = record.password
+            show.current.value = password
         else:
             show.current.value = "*****"
         show.current.update()
@@ -39,7 +44,7 @@ def info_page(id: int, page: ft.Page):
             ft.IconButton(
                 icon=ft.Icons.COPY,
                 tooltip="Copy email",
-                on_click=lambda e: copy(record.password)),
+                on_click=lambda e: copy(password)),
             # ft.IconButton(icon=ft.Icons.REMOVE_RED_EYE, on_click=toggle)
         ]),
         ft.Row([

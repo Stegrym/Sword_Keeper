@@ -1,16 +1,10 @@
 import logging
 
-# TODO
-#  добавить FileHandler, чтобы писать логи в файл:
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    handlers=[logging.StreamHandler()]
+    level=logging.DEBUG,
+    format="%(asctime)s %(levelname)s %(message)s",
+    handlers=[logging.StreamHandler()],
 )
 
-# создаём общий логгер
-logger = logging.getLogger("my_app")
+logger = logging.getLogger("main_app")
 
-
-def loger_info(info: str):
-    logger.info(info)

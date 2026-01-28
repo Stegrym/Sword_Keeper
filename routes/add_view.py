@@ -1,5 +1,7 @@
 import flet as ft
+from utills import encode_password
 from db_logic import add_password
+
 
 def add_view(page: ft.Page):
     service = ft.TextField(label="Service")
@@ -8,7 +10,8 @@ def add_view(page: ft.Page):
     notes = ft.TextField(label="Notes")
 
     def save(e):
-        add_password(service.value, email.value, password.value, notes.value)
+        password_entry = encode_password(password.value)
+        add_password(service.value, email.value, password_entry, notes.value)
         page.go("/home")
 
     def back(e):
