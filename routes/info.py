@@ -1,11 +1,12 @@
 import flet as ft
-from app_loging import log_info
 from utills import decode_password
 from clipboard import copy
 from db_logic import get_all
 
 
 def info_page(id: int, page: ft.Page):
+    """Страница с подробной информацией о сервисе"""
+
     show = ft.Ref[ft.Text]()
     records = get_all()
     record = next((r for r in records if r.id == id), None)
@@ -13,18 +14,19 @@ def info_page(id: int, page: ft.Page):
     if not record:
         return ft.View(route="/info", controls=[ft.Text("Запись не найдена")])
     else:
-        log_info(f"b64 - {record.password}")
         password = decode_password(record.password)
-        log_info(f"пароль - {password}")
 
     def toggle(e):
-        # меняем текст на ***** или реальный пароль
+        """Меняет текст пароля на символы"""
+
         if show.current.value == "*****":
             show.current.value = password
         else:
             show.current.value = "*****"
         show.current.update()
 
+    # Создание страницы
+    # Вывод информации по сервису
     details = ft.Column([
         ft.Row([
             ft.Container(ft.Text("Service:"), width=150),  # фиксируем ширину
@@ -52,16 +54,19 @@ def info_page(id: int, page: ft.Page):
             ft.Container(ft.Text(record.notes), width=150)
         ]),
     ])
-    bootm_menu = ft.Row([
+
+    # Кнопки
+    buttons_menu = ft.Row([
         ft.ElevatedButton("Back", on_click=lambda e: page.go("/home")),
         ft.ElevatedButton("Show Password", on_click=toggle),
         ft.ElevatedButton("Delete", on_click=lambda e: page.go(f"/delete_service?id={record.id}")),
     ])
 
+    page_content = [
+        details,
+        buttons_menu
+    ]
     return ft.View(
         route="/info",
-        controls=[
-            details,
-            bootm_menu
-        ]
+        controls=page_content
     )

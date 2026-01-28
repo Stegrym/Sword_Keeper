@@ -1,11 +1,10 @@
 import flet as ft
 from typing import List
-# from clipboard import copy
 from db_logic import get_all
 
 
 def build_rows(page, records) -> List[ft.DataRow]:
-    """Создаёт список из объектов DataRow для заполнения строк таблицы"""
+    """Собирает список строк для вывода на странице"""
 
     rows = []
     for row in records:
@@ -23,17 +22,16 @@ def build_rows(page, records) -> List[ft.DataRow]:
     return rows
 
 
-def home_view(page: ft.Page) -> ft.View():
-    """Создаёт таблицу из базы данных,
-    имеет возможность сортировки,
-    возвращает View страницы c rout:/home"""
+def home_page(page: ft.Page) -> ft.View():
+    """Создаёт страницу columns списком всех записей из базы данных.
+    Кнопками для создания, редактирования записей"""
 
     sort_status = False
     records = get_all()
 
     def sort_table(e, page, table, records):
-        """Сортирует records по нужному столбцу с переменной направления,
-        пересоздаёт строки таблицы"""
+        """Сортирует записи по нужному столбцу с переменной направления,
+        пересоздаёт страницу"""
 
         nonlocal sort_status
         sort_status = not sort_status
@@ -62,9 +60,12 @@ def home_view(page: ft.Page) -> ft.View():
         rows=build_rows(page, records),
     )
 
-    # __MENU__
-    columns = [table, ft.Button("Добавить запись", on_click=lambda e: page.go("/add"))]
+    # Создание страницы
 
+    # Меню страницы
+    columns = [table, ft.Button("Добавить запись", on_click=lambda e: page.go("/add"))]
+    page_content = list(columns)
     return ft.View(
         route="/home",
-        controls=[ft.Column(columns)])
+        controls=page_content
+    )
