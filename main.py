@@ -1,54 +1,50 @@
-import json
-from pathlib import Path
-
-# IDEA: добавить GUI через tkinter
-# IDEA: добавить поиск по service/email
-# IDEA: добавить SQLite хранение данных
-
+import flet as ft
+from utills import parse_query
+from app_loging import logger
+from db_logic import create_tables
+from routes import home_page, add_view, info_page, delete_service
 
 
-email_input_data = "QWERTY@gmai.com"  # input("Введите Email адрес - ")
-password_input_data = "QWErty12345"  # input("Введите пароль - ")
-STORAGE_FILE = "storage.json"
-DEFAULT_ENCODING = "utf-8"
+def main(page: ft.Page):
+    page.title = "Password Manager"
+    page.window_prevent_close = False
+    page.window_width = 900
+    page.window_height = 600
+
+    def route_change(e):
+        page.views.clear()
+
+        if page.route == "/home":
+          logger.info("PAGE - /home")
+          page.views.append(home_page(page))
+
+        elif page.route == "/add":
+            logger.info("PAGE - /add")
+            page.views.append(add_view(page))
+
+        elif page.route.startswith("/info"):
+            logger.info("PAGE - /info")
+            params = parse_query(page.route)
+            record_id = int(params["id"])
+            page.views.append(info_page(record_id, page))
+
+        elif page.route.startswith("/delete_service"):
+            logger.info("PAGE - /delete_service")
+            params = parse_query(page.route)
+            record_id = int(params["id"])
+            page.views.append(delete_service(record_id, page))
+
+        page.update()
+
+    def view_pop(e):
+        page.views.pop()
+        page.update()
+
+    page.on_route_change = route_change
+    page.on_view_pop = view_pop
+
+    create_tables()
+    page.go("/home")
 
 
-def check_storage(file_name=STORAGE_FILE):
-    """
-    :param file_name:
-    :return:
-    """
-    file = Path("storage.json")
-    if not file.exists():
-        file.write_text("[]", encoding=DEFAULT_ENCODING)
-
-
-def read_data(file=STORAGE_FILE):
-    """
-    Open for read JSON file, return json data
-    :param file: json file
-    :return: data:list
-    """
-    check_storage(file)
-    with open(file, "r", encoding="utf-8") as file:
-        try:
-            data = json.load(file)
-        except json.JSONDecodeError:
-            data = []
-    return data
-
-
-def write_data(service, email:str, password:str):
-    # TODO: добавить проверку email через регулярное выражение
-    # TODO: расширить поиск по сервису, а не только по email
-    # NOTE: Добавить Док
-
-    data = read_data(STORAGE_FILE)
-    new_entry = {"email": email, "password": password}
-    data.append(new_entry)
-
-    with open(STORAGE_FILE, "w", encoding="utf-8") as file:
-        json.dump(data, file, indent=4, ensure_ascii=False)
-
-
-write_data("test", email_input_data, password_input_data)
+ft.app(target=main)
